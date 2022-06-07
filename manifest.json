@@ -1,0 +1,10 @@
+{
+  "name": "Persist Settings panel",
+  "author": {
+    "name": "Swishilicous",
+    "id": "474322346937810955"
+  },
+  "description": "Persists the panel that was last selected in settings when you click the settings button.",
+  "version": "1.0.0",
+  "id": "swish.persist-settings-panel"
+}
