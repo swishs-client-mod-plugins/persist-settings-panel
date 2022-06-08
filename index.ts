@@ -5,13 +5,14 @@ import Plugin from '@structures/plugin';
 import { create } from '@patcher';
 import { getByProps } from '@webpack';
 import { Layers } from '@webpack/common';
-import { getOwnerInstance } from '@utilities';
+import { getOwnerInstance, waitFor } from '@utilities';
 
 const Patcher = create('persist-settings-panel');
 
 const classes = getByProps('godlike');
 
 interface AccountContainer {
+  forceUpdate: () => void;
   renderSettingsGear: () => {
     props: {
       onClick: () => void;
@@ -20,14 +21,30 @@ interface AccountContainer {
 }
 
 export default class PersistSettingsPanel extends Plugin {
-  start() {
-    const accountContainer = getOwnerInstance(document.getElementsByClassName(classes.container)[0]);
-    Patcher.after(accountContainer as any as AccountContainer, 'renderSettingsGear', (_, __, ret) => {
-      ret.props.onClick = () => void Layers.pushLayer('USER_SETTINGS');
+  status = { firstOpen: true };
+
+  async start() {
+    const element = await waitFor(`.${classes.container}`, 60000);
+    if (!element || !this.started) return;
+
+    const AccountContainer: AccountContainer = getOwnerInstance(element);
+    if (!AccountContainer) return;
+
+    Patcher.after(AccountContainer, 'renderSettingsGear', (_, __, ret) => {
+      ret.props.onClick = (orignal => () => {
+        if (this.status.firstOpen) {
+          this.status.firstOpen = false;
+          return orignal();
+        }
+
+        Layers.pushLayer('USER_SETTINGS');
+      })(ret.props.onClick);
     });
+
+    AccountContainer.forceUpdate?.();
   }
 
   stop() {
     Patcher.unpatchAll();
   }
-}
+};
